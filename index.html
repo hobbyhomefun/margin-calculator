@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reseller Margin Calculator — first-bar pricing</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; background: #F5EEE3; color: #3E362E;
+         margin: 0; padding: 2rem 1rem; }
+  main { max-width: 560px; margin: 0 auto; background: #fffdf8; border: 1px solid #B08968;
+         border-radius: 10px; padding: 1.5rem 1.75rem 1.75rem; }
+  h1 { font-size: 1.45rem; margin: 0 0 .25rem; color: #9E3F22; }
+  p.sub { margin: 0 0 1.25rem; font-size: .92rem; color: #6d6156; }
+  label { display: block; font-size: .9rem; margin: 1rem 0 .3rem; }
+  input { width: 100%; box-sizing: border-box; padding: .55rem .65rem; font-size: 1rem;
+          border: 1px solid #B08968; border-radius: 6px; background: #fff; }
+  button { margin-top: 1.25rem; width: 100%; padding: .7rem; font-size: 1rem; cursor: pointer;
+           background: #9E3F22; color: #F5EEE3; border: 0; border-radius: 6px; }
+  #out { margin-top: 1.25rem; border-top: 1px dashed #B08968; padding-top: 1rem; display: none; }
+  #out table { width: 100%; border-collapse: collapse; font-size: .98rem; }
+  #out td { padding: .3rem 0; }
+  #out td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .big { font-size: 1.15rem; font-weight: bold; color: #9E3F22; }
+  #verdict { margin-top: .8rem; font-size: .95rem; }
+  .pass { color: #2F5D3A; } .fail { color: #B02A30; } .close { color: #8a6d1f; }
+  footer { max-width: 560px; margin: 1rem auto 0; font-size: .8rem; color: #8a7d6e; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Reseller Margin Calculator</h1>
+  <p class="sub">The pricing math behind Hobby Home Fun: profit = 0.92 × sell − cost
+     (the 0.92 leaves room for ~3% card processing and a 5% refund reserve).
+     An item passes if it clears <strong>$8 profit</strong> OR <strong>35% margin</strong> —
+     and gets priced at whichever bar comes first.</p>
+
+  <label for="cost">Total cost — item + every shipping leg you pay ($)</label>
+  <input id="cost" type="number" min="0" step="0.01" placeholder="7.34">
+
+  <label for="sell">Sale price to check ($, optional)</label>
+  <input id="sell" type="number" min="0" step="0.01" placeholder="12.99">
+
+  <button id="go" type="button">Calculate</button>
+
+  <div id="out">
+    <table>
+      <tr><td>$8-profit price</td><td id="o-profit"></td></tr>
+      <tr><td>35%-margin price</td><td id="o-margin"></td></tr>
+      <tr><td>First-bar price (use this one)</td><td id="o-first" class="big"></td></tr>
+      <tr id="row-sell"><td id="o-sell-label"></td><td id="o-sell"></td></tr>
+    </table>
+    <div id="verdict"></div>
+  </div>
+</main>
+<footer>Free tool from Hobby Home Fun. No data leaves your browser.</footer>
+<script>
+  const KEEP = 0.92, PROFIT_BAR = 8, MARGIN_BAR = 0.35;
+  const up99 = x => { let w = Math.floor(x), c = w + 0.99; if (c < x - 1e-9) c += 1; return Math.round(c * 100) / 100; };
+  const money = x => '$' + x.toFixed(2);
+  document.getElementById('go').addEventListener('click', () => {
+    const cost = parseFloat(document.getElementById('cost').value);
+    const sellRaw = document.getElementById('sell').value;
+    const sell = sellRaw === '' ? null : parseFloat(sellRaw);
+    if (isNaN(cost) || cost < 0) { alert('Enter a total cost of 0 or more.'); return; }
+    const pProfit = up99((cost + PROFIT_BAR) / KEEP);
+    const pMargin = up99(cost / 0.57);
+    const first = Math.min(pProfit, pMargin);
+    document.getElementById('o-profit').textContent = money(pProfit);
+    document.getElementById('o-margin').textContent = money(pMargin);
+    document.getElementById('o-first').textContent = money(first);
+    const check = (sell !== null && !isNaN(sell) && sell > 0) ? sell : first;
+    const p = KEEP * check - cost, m = p / check * 100;
+    document.getElementById('o-sell-label').textContent =
+      (sell !== null && !isNaN(sell) && sell > 0 ? 'At your price ' + money(check) : 'At the first-bar price') + ': profit / margin';
+    document.getElementById('o-sell').textContent = money(p) + ' / ' + m.toFixed(1) + '%';
+    const v = document.getElementById('verdict');
+    if (p >= PROFIT_BAR || m >= 35) { v.textContent = 'Verdict: PASSES — clears at least one bar.'; v.className = 'pass'; }
+    else if (p >= 6 || m >= 30)     { v.textContent = 'Verdict: CLOSE — clears neither bar but is within reach of one. A human-decision case.'; v.className = 'close'; }
+    else                            { v.textContent = 'Verdict: FAILS both bars.'; v.className = 'fail'; }
+    document.getElementById('out').style.display = 'block';
+  });
+</script>
+</body>
+</html>
